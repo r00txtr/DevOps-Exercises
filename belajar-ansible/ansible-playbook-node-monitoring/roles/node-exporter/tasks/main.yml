@@ -1,0 +1,38 @@
+---
+- name: Check if node exporter is installed.
+  stat: "path=/usr/local/bin/node_exporter"
+  register: nodeexporter_bin
+
+- name: Unarchive node-exporter x64
+  become: yes
+  unarchive: 
+    src: https://github.com/prometheus/node_exporter/releases/download/v1.0.1/node_exporter-1.0.1.linux-amd64.tar.gz
+    dest: /usr/local/bin
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  when: not nodeexporter_bin.stat.exists
+
+- name: node-exporter Service systemd
+  become: yes
+  template: 
+    src: node-exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+
+- name: Just force systemd to reread configs (2.4 and above)
+  become: yes
+  systemd:
+    daemon_reload: yes
+
+- name: Start node_exporter Service
+  become: yes
+  systemd:
+    state: started
+    name: node_exporter
+    enabled: yes
+
+- name: Check if node_exporter is accessible
+  uri:
+    url: http://localhost:9100
+    method: GET
+    status_code: 200
+# tasks file for node-exporter

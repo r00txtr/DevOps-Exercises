@@ -1,0 +1,8 @@
+---
+- name: Provision prometheus
+  become: yes
+  hosts: prometheus
+  roles:
+    - prometheus
+  vars_files:
+    - group_vars/prometheus.yaml

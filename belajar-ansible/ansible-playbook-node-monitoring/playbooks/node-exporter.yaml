@@ -1,0 +1,6 @@
+---
+- name: Provision Node-exporter
+  become: yes
+  hosts: apps
+  roles:
+    - node-exporter

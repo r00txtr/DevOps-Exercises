@@ -1,0 +1,55 @@
+---
+# tasks file for promtail
+- name: Install unzip
+  become: yes
+  apt:
+    name: unzip
+
+- name: Check if promtail is installed.
+  stat: "path=/usr/local/bin/promtail"
+  register: promtail_bin
+
+- name: Unarchive promtail x64 # harus dibenerin
+  become: yes
+  unarchive: 
+    src: https://github.com/grafana/loki/releases/download/v2.1.0/promtail-linux-amd64.zip #
+    dest: /usr/local/bin
+    remote_src: yes
+  when: not promtail_bin.stat.exists
+
+- name: Rename promtail linux amd64 to promtail
+  command: creates="/usr/local/bin/promtail" mv /usr/local/bin/promtail-linux-amd64 /usr/local/bin/promtail
+
+- name: create promtail configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ promtail_config_dir }}"
+    - "{{ promtail_config_dir }}/backup"
+  when: not promtail_bin.stat.exists
+
+- name: Copy config promtail
+  become: yes
+  template:
+    src: templates/promtail.yaml.j2
+    dest: /etc/promtail/promtail.yaml
+
+- name: Create systemd for promtail
+  become: yes
+  template:
+    src: templates/promtail.service.j2
+    dest: /etc/systemd/system/promtail.service
+
+- name: Just force systemd to reread configs (2.4 and above)
+  become: yes
+  systemd:
+    daemon_reload: yes
+
+- name: Start promtail Service
+  become: yes
+  systemd:
+    state: started
+    name: promtail
+    enabled: yes
+  when: not promtail_bin.stat.exists

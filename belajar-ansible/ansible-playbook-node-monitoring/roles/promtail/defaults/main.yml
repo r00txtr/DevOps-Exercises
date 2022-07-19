@@ -1,0 +1,4 @@
+---
+# defaults file for promtail
+promtail_server_host: 10.0.1.4
+promtail_config_dir: /etc/promtail

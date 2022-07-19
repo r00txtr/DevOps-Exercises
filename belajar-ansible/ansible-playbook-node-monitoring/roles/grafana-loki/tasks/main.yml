@@ -1,0 +1,56 @@
+---
+# tasks file for grafana-loki
+- name: Install unzip
+  become: yes
+  apt:
+    name: unzip
+
+- name: Check if loki is installed.
+  stat: "path=/usr/local/bin/loki"
+  register: loki_bin
+
+- name: Unarchive loki x64 # harus dibenerin
+  become: yes
+  unarchive: 
+    src: https://github.com/grafana/loki/releases/download/v2.1.0/loki-linux-amd64.zip #
+    dest: /usr/local/bin
+    remote_src: yes
+  when: not loki_bin.stat.exists
+
+- name: Rename loki linux amd64 to loki
+  command: creates="/usr/local/bin/loki" mv /usr/local/bin/loki-linux-amd64 /usr/local/bin/loki
+
+- name: create loki configuration directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ loki_config_dir }}"
+    - "{{ loki_config_dir }}/backup"
+    - "{{ loki_db_dir }}"
+  when: not loki_bin.stat.exists
+
+- name: Copy config loki
+  become: yes
+  template:
+    src: templates/loki.yaml.j2
+    dest: /etc/loki/loki.yaml
+
+- name: Create systemd for loki
+  become: yes
+  template:
+    src: templates/loki.service.j2
+    dest: /etc/systemd/system/loki.service
+
+- name: Just force systemd to reread configs (2.4 and above)
+  become: yes
+  systemd:
+    daemon_reload: yes
+
+- name: Start loki Service
+  become: yes
+  systemd:
+    state: started
+    name: loki
+    enabled: yes
+  when: not loki_bin.stat.exists

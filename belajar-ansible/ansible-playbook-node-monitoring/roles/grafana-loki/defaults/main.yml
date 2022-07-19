@@ -1,0 +1,4 @@
+---
+# defaults file for grafana-loki
+loki_config_dir: /etc/loki
+loki_db_dir: /var/lib/loki

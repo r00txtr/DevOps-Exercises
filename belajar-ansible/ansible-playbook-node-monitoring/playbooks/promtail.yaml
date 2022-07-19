@@ -1,0 +1,6 @@
+---
+- name: Provision Grafana loki
+  become: yes
+  hosts: promtail
+  roles:
+    - promtail
